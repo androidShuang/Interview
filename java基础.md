@@ -1,5 +1,5 @@
 #java基础
-1.关于equals(equals 与hashcode与==的关系)
+###1.关于equals(equals 与hashcode与==的关系)
 首先看Object的equals方法
 ```java
 public boolean equals(Object obj) {
@@ -100,4 +100,40 @@ public class Cat {
 2 如果两个对象的hashCode相同，它们并不一定相同，这里的对象相同指的是用eqauls方法比较。
 只要符合以上两个原则就好了。
 
-2
+###2int、char、long各占多少字节数
+我们不只说这个三种，整个java8中基本类型都说一下吧（一字节等于8个比特位）。
+1.int ----4byte（说明一下1byte=8bit）
+2.short----2byte
+3.long----8byte
+4.float----4byte
+5.double----8byte
+6.char----2byte
+7.boolean----1byte
+8.byte----1byte
+注明：至于为什么 Java 中 char 无论中英文数字都占用2字节，是因为 Java 中使用 Unicode 字符，所有字符均以2个字节存储。
+而如果需要识别字符是否为中文，可以使用正则匹配式。
+
+####int与integer的区别
+1.从初始值来看，首先int的初始值为0而integer的初始值为null
+2.使用场景...比如未参加考试的和考试分数为0的场景，就要使用integer
+备注:从jdk1.5开始有了自动装箱可以Integer i = 9;
+还有一道经典面试题:
+```java
+ public class Test {  
+        public static void main(String[] args) {  
+            //在-128~127 之外的数
+            Integer num1 = 128;   Integer num2 = 128;           
+            System.out.println(num1==num2);   //false
+
+            // 在-128~127 之内的数 
+            Integer num3 = 9;   Integer num4 = 9;   
+            System.out.println(num3==num4);   //true
+        }  
+    }  
+
+```
+解析原因：归结于java对于Integer与int的自动装箱与拆箱的设计，是一种模式：叫享元模式（flyweight）。 
+加大对简单数字的重利用，Java定义在自动装箱时对于值从–128到127之间的值，它们被装箱为Integer对象后，会存在内存中被重用，始终只存在一个对象。 
+而如果超过了从–128到127之间的值，被装箱后的Integer对象并不会被重用，即相当于每次装箱时都新建一个 Integer对象。
+
+####对java多态的理解
