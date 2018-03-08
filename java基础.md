@@ -1,5 +1,5 @@
 #java基础
-###1.关于equals(equals 与hashcode与==的关系)
+####1.关于equals(equals 与hashcode与==的关系)
 首先看Object的equals方法
 ```java
 public boolean equals(Object obj) {
@@ -100,7 +100,7 @@ public class Cat {
 2 如果两个对象的hashCode相同，它们并不一定相同，这里的对象相同指的是用eqauls方法比较。
 只要符合以上两个原则就好了。
 
-###2int、char、long各占多少字节数
+####2.int、char、long各占多少字节数
 我们不只说这个三种，整个java8中基本类型都说一下吧（一字节等于8个比特位）。
 1.int ----4byte（说明一下1byte=8bit）
 2.short----2byte
@@ -136,7 +136,7 @@ public class Cat {
 加大对简单数字的重利用，Java定义在自动装箱时对于值从–128到127之间的值，它们被装箱为Integer对象后，会存在内存中被重用，始终只存在一个对象。 
 而如果超过了从–128到127之间的值，被装箱后的Integer对象并不会被重用，即相当于每次装箱时都新建一个 Integer对象。
 
-####对java多态的理解
+####3.对java多态的理解
 1.名词解释：事物在运行过程中存在不同的形态，或者说同一操作作用于不同的对象，可以有不同的解释，产生不同的执行结果
 2.多态的前提：要有继承关系，也可以实现关系（接口和实现类），在开发中多指第二种，子类要重写父类的方法，父类引用指向子类。
 3.多态的好处：代码复用，子类可以直接调用父类的方法。向后兼容，可以提高可扩充性和可维护性。
@@ -256,7 +256,7 @@ static pet run
 ```
 注意：成员变量是不具备多态性的。
 
-####String、StringBuffer、StringBuilder区别
+####5.String、StringBuffer、StringBuilder区别
 1.简单的说区别：String是字符串常量，StringBuffer是变量线程安全，StringBuilder是变量线程不安全
 2.重要区别，String是不可变的，而且StringBuffer是可以变化的，
 3.做一个简单的总结
@@ -282,3 +282,209 @@ String str1 = str2 +str3 + str4;
 ```
 5.这是有区别的，第一个速度快，第二个实际上内部调用的还是StringBuffer
 
+####6.什么是内部类？内部类的作用
+1.先看定义：定义在类内部,方法内部,甚至比方法体更小的代码块内部的类(if 语句里面等)
+2.关于四种内部类：静态内部类，成员内部类，局部内部类，匿名内部类
+3.为什么要使用内部类？在think in java中有这么一句话“使用内部类最吸引人的原因就是：每个内部类都能独立继承（接口的）实现，所以无论外围类是否已经继承了某个（接口的）实现，对于内部类都没有影响”，这个需要多理解，其实内部类也是为了弥补多重继承的不足。需要注意的是，内部类是个编译时的概念，一旦编译成功了它就与外围类属于两个完全不同的类。
+4.成员内部类：属于外部类的一个成员，所以可以访问外部类的所有属性和方法，包括Private的，外部类要访问内部类，必须通过内部类的实例访问，而且成员内部类是依附于外围类的，所以只有先创建了外部类实例，才能创建内部类实例。
+```java
+package com.company;
+
+public class OuterClass {
+    private String str;
+    public void outetrDisplay(){
+        System.out.println("outerclass....");
+    }
+    public class InnerClass{
+        public void innerDisplay(){
+            str = "chenssy";
+            outetrDisplay();
+        }
+    }
+
+    //推荐通过getXXX方式获取成员内部类
+    public InnerClass getInnerClass(){
+        return new InnerClass();
+    }
+
+    public static void main(String[] args){
+        OuterClass outerClass = new OuterClass();
+        OuterClass.InnerClass innerClass = outerClass.getInnerClass();
+        innerClass.innerDisplay();
+    }
+
+}
+
+
+```
+
+5.局部内部类：有这样一种内部类，它是嵌套在方法和作用于内的，对于这个类的使用主要是应用与解决比较复杂的问题，想创建一个类来辅助我们的解决方案，到那时又不希望这个类是公共可用的，所以就产生了局部内部类，局部内部类和成员内部类一样被编译，只是它的作用域发生了改变，它只能在该方法和属性中被使用，出了该方法和属性就会失效。
+```java
+//定义在方法里：
+package com.company;
+
+public class LocalInnerTest {
+    private int a = 1;
+    private static int b = 2;
+
+    public void test() {
+        final int c = 3;
+        class LocalInner {
+            public void add1() {
+                System.out.println("a= " + a);
+                System.out.println("b= " + b);
+                System.out.println("c= " + c);
+            }
+        }
+        new LocalInner().add1();
+    }
+
+    static public void test2() {
+        final int d = 5;
+        class LocalInner2 {
+            public void add1() {
+                // System.out.println("a= " + a);
+                System.out.println("b= " + b);
+                System.out.println("c= " + d);
+            }
+        }
+        new LocalInner2().add1();
+    }
+
+    public static void main(String args[]) {
+
+        // LocalInnerTest() lc = new LocalInnerTest();
+        new LocalInnerTest().test2();
+        new LocalInnerTest().test();
+    }
+}
+
+
+```
+注意：
+	如果在静态方法中：
+       可以访问外部类中所有静态成员，包含私有
+    如果在实例方法中：
+       可以访问外部类中所有的成员，包含私有。
+    局部内部类可以访问所在方法中定义的局部变量，但是要求局部变量必须使用final修饰
+    局部内部类调用局部变量，要在局部变量上加final，为什么？跟生命周期有关，局部内部类与局部变量的生命周期不一致，java为了解决这个问题，采用复制的方式，什么原则呢？也就说如果局部变量的值在编译期间就可以确定，则直接在匿名内部里面创建一个拷贝。如果局部变量的值无法在编译期间确定，则通过构造器传参的方式来对拷贝进行初始化赋值。从上面可以看出，在run方法中访问的变量a根本就不是test方法中的局部变量a。这样一来就解决了前面所说的 生命周期不一致的问题。但是新的问题又来了，既然在run方法中访问的变量a和test方法中的变量a不是同一个变量，当在run方法中改变变量a的值的话，会出现什么情况？对，会造成数据不一致性，这样就达不到原本的意图和要求。为了解决这个问题，java编译器就限定必须将变量a限制为final变量，不允许对变量a进行更改（对于引用类型的变量，是不允许指向新的对象），这样数据不一致性的问题就得以解决了。
+6.静态内部类，静态内部类与非静态内部类之间存在一个最大的区别，我们知道非静态内部类在编译完成之后会隐含地保存着一个引用，该引用是指向创建它的外围内，但是静态内部类却没有。没有这个引用就意味着：它的创建是不需要依赖于外围类的，它不能使用任何外围类的非static成员变量和方法。官网有一段翻译：
+从字面上看，一个被称为静态嵌套类，一个被称为内部类。从字面的角度解释是这样的：什么是嵌套？嵌套就是我跟你没关系，自己可以完全独立存在，但是我就想借你的壳用一下，来隐藏一下我自己（真TM猥琐）。什么是内部？内部就是我是你的一部分，我了解你，我知道你的全部，没有你就没有我。（所以内部类对象是以外部类对象存在为前提的）
+```java
+public class OuterClass {
+    private String sex;
+    public static String name = "chenssy";
+ 
+    /**
+     *静态内部类
+     */
+    static class InnerClass1{
+        /* 在静态内部类中可以存在静态成员 */
+        public static String _name1 = "chenssy_static";
+ 
+        public void display(){
+            /* 
+             * 静态内部类只能访问外围类的静态成员变量和方法
+             * 不能访问外围类的非静态成员变量和方法
+             */
+            System.out.println("OutClass name :" + name);
+        }
+    }
+ 
+    /**
+     * 非静态内部类
+     */
+    class InnerClass2{
+        /* 非静态内部类中不能存在静态成员 */
+        public String _name2 = "chenssy_inner";
+        /* 非静态内部类中可以调用外围类的任何成员,不管是静态的还是非静态的 */
+        public void display(){
+            System.out.println("OuterClass name：" + name);
+        }
+    }
+ 
+    /**
+     * @desc 外围类方法
+     * @author chenssy
+     * @data 2013-10-25
+     * @return void
+     */
+    public void display(){
+        /* 外围类访问静态内部类：内部类. */
+        System.out.println(InnerClass1._name1);
+        /* 静态内部类 可以直接创建实例不需要依赖于外围类 */
+        new InnerClass1().display();
+ 
+        /* 非静态内部的创建需要依赖于外围类 */
+        OuterClass.InnerClass2 inner2 = new OuterClass().new InnerClass2();
+        /* 方位非静态内部类的成员需要使用非静态内部类的实例 */
+        System.out.println(inner2._name2);
+        inner2.display();
+    }
+ 
+    public static void main(String[] args) {
+        OuterClass outer = new OuterClass();
+        outer.display();
+    }
+}
+//----------------
+//Output:
+//chenssy_static
+//OutClass name :chenssy
+//chenssy_inner
+//OuterClass name：chenssy
+
+```
+7.匿名内部类：没有名字的局部内部类，只使用一次。看代码
+```java
+   Runnable runnable = new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            };
+    new View.OnClickListener(){
+    @Override
+    public void onClick(View v) {
+
+    }
+};
+//上面都是常用的匿名内部类
+abstract class Person {
+    public abstract void eat();
+}
+
+public class Demo {
+    public static void main(String[] args) {
+        Person p = new Person() {
+            public void eat() {
+                System.out.println("eat something");
+            }
+        };
+        p.eat();
+    }
+}
+```
+在看一个代码：
+```java
+//1
+        new Object(){
+            void show(){
+                System.out.println("show run");                
+            }
+        }.show();//正确
+        //2
+        Object obj = new Object(){
+            void show(){
+                System.out.println("show run");
+            }
+        };
+        obj.show();//编译错误
+
+```
+1和2的写法正确吗？有区别吗？说出原因。
+写法是正确，1和2都是在通过匿名内部类建立一个Object类的子类对象。
+区别：
+第一个可是编译通过，并运行。
+第二个编译失败，因为匿名内部类是一个子类对象，当用Object的obj引用指向时，就被提升为了
+Object类型，而编译时检查Object类中是否有show方法，所以编译失败。
