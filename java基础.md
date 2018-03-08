@@ -137,3 +137,148 @@ public class Cat {
 而如果超过了从–128到127之间的值，被装箱后的Integer对象并不会被重用，即相当于每次装箱时都新建一个 Integer对象。
 
 ####对java多态的理解
+1.名词解释：事物在运行过程中存在不同的形态，或者说同一操作作用于不同的对象，可以有不同的解释，产生不同的执行结果
+2.多态的前提：要有继承关系，也可以实现关系（接口和实现类），在开发中多指第二种，子类要重写父类的方法，父类引用指向子类。
+3.多态的好处：代码复用，子类可以直接调用父类的方法。向后兼容，可以提高可扩充性和可维护性。
+4.关于绑定：先说一下绑定的概念，将一个方法调用同一个方法主体关联起来就叫绑定。绑定分为动态绑定（后期绑定），和前期绑定（由编译器和链接程序实现），那么什么才属于动态绑定呢？除了static 、final方法之外（private方法也属于final方法），其他所有的方法(注意这里说的是方法，成员变量看下面的原则)都是后期绑定。为什么要将某个方法生命为final呢？因为为了要防止重写，可以有效的关闭动态绑定。
+5.关于绑定前人总结的
+>     （1）成员变量：编译看左边，运行看左边	（）
+
+>     （2）成员方法：编译看左边，运行看右边 （动态绑定）
+
+>     （3）静态方法：编译看左边，运行看左边	（前期绑定）
+  
+6.下面看个实例
+```java
+package com.company;
+
+public class Dog extends Pet{
+
+    int age = 20;
+    static int number = 20;
+    private int eye = 20;
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public int getAge() {
+        return age;
+    }
+
+    public static void run(){
+        System.out.println("dog static run");
+    }
+
+    private static void eat(){
+        System.out.println("static pet private eat");
+    }
+
+    @Override
+    protected void say3() {
+        System.out.println("dog say3");
+    }
+
+    public void cute(){
+        System.out.println("dog cute");
+    }
+
+    public void say2(){
+        System.out.println("dog say2");
+    }
+
+}
+
+package com.company;
+
+public class Pet {
+    private int age = 12;
+    int number = 11;
+    static int eye = 2;
+
+    public int getAge(){
+        return this.age;
+    }
+
+    public static void run(){
+        System.out.println("static pet run");
+    }
+
+    private void eat(){
+        System.out.println("static pet private eat");
+    }
+
+    public void say(){
+        System.out.println("pet say");
+    }
+
+    private void say2(){
+        System.out.println("pet say 2");
+    }
+
+    protected void say3(){
+        System.out.println("pet say 3");
+    }
+}
+package com.company;
+
+import java.util.HashMap;
+
+public class Main {
+
+    public static void main(String[] args) {
+	// write your code here
+        Pet p = new Dog();
+        p.say();
+        p.say3();
+
+        System.out.println("dog number=="+p.number);
+        System.out.println("dog eye=="+p.eye);
+        //这个会报错，因为这age是private的所以也是final，属于前期绑定，所以这个即使衍生类也有age
+        //成员变量，那么也调用不了
+//        System.out.println("dog age=="+p.age);
+
+        int age = p.getAge();
+        System.out.println(age+"");
+        p.run();
+//        p.eat();
+
+    }
+}
+输出结果
+pet say
+dog say3
+dog number==11
+dog eye==2
+20
+static pet run
+```
+注意：成员变量是不具备多态性的。
+
+####String、StringBuffer、StringBuilder区别
+1.简单的说区别：String是字符串常量，StringBuffer是变量线程安全，StringBuilder是变量线程不安全
+2.重要区别，String是不可变的，而且StringBuffer是可以变化的，
+3.做一个简单的总结
+>1.如果要操作少量的数据用 = String　　
+
+>2.单线程操作字符串缓冲区 下操作大量数据 = StringBuilder
+
+>3.多线程操作字符串缓冲区 下操作大量数据 = StringBuffer
+  
+4.看个经典的面试题
+```java
+String str = “This is only a” + “ simple” + “ test”;
+StringBuffer builder = new StringBuilder(“This is only a”).append(“simple”).append(“ test”);
+
+//其实就是如下
+//String str = “This is only a simple test”;
+
+String str2 = “This is only a”;
+String str3 = “ simple”;
+String str4 = “ test”;
+String str1 = str2 +str3 + str4;
+
+```
+5.这是有区别的，第一个速度快，第二个实际上内部调用的还是StringBuffer
+
