@@ -72,3 +72,156 @@ E:onUnbind()
 **问题：start->bind->unbind 是不是A-B-D-E-C bind->start->unbind是不是A-D-B-E-C，在执行unbind的时候会调用unbind->ondestroy？
 unbindService执行后，它会去检查是否执行过startService，如果执行过，它只是被解绑，解绑后并不自动调用onDestroy，如果想让它destroy，需要再加一步stopService，可以用Log方法检查。**
 
+####3.Activity之间的通信方式
+1.intent，这个大家都用过不展开。这里需要说的一点就是，intent的携带数据大小是有限制的，在505Kb,感觉应该是512，后来想想应该是intent本身也需要占一定的大小吧。
+2.借助类的静态变量。（但是这个不安全）
+3.借助全局变量来实现/Application，这个就是借助全局实例application。
+4.借助外部存储实现通讯，
+4.1使用sharedpreference实现activity之间的数据通信。 不足之处在于——从SharedPreference的API就可以看出，采用SharedPreference只能存取标准数据类型的变量值int、float、long、boolean、String。对与一些复杂类型的就捉襟见肘了。而且sp不支持多线程，而且是线程不安全的。
+4.2使用sqlite来实现数据共享通信。
+4.3使用file来实现（其实sp和sqlite都是基于file的）
+5.借助service来实现。（也要根据使用尝尽，避免大材小用，和service挂掉）
+6.通过EventBus/rxBus 进行通信
+7.通过广播
+
+####4.Activity各种情况下的生命周期
+1.正常情况下是：onCreate()->onStart()->onResume()->onPause()->onStop()->onDestory()
+2.Home键,back键，电源键，进程管理器：
+按下home键:前台Activity依次回调onPause, onStop；
+再次打开:onRestart->onstart->onResume;
+按下back键:前台Activity依次回调onPause, onStop, onDestroy；
+按下电源键：前台Activity依次onPause, onStop；
+对于进程管理器，采用的force-stop的方式，也是直接强杀进程，并且连广播都会隔断。
+
+####5.横竖屏切换的时候，Activity 各种情况下的生命周期
+1.未做任何配置，竖屏切换横屏
+```java
+03-12 15:45:11.658 18429-18429/zs.com.empty E/生命周期: onPause
+03-12 15:45:11.660 18429-18429/zs.com.empty E/生命周期: onsaveInstanceState
+03-12 15:45:11.661 18429-18429/zs.com.empty E/生命周期: onstop
+03-12 15:45:11.661 18429-18429/zs.com.empty E/生命周期: ondestroy
+03-12 15:45:11.742 18429-18429/zs.com.empty E/生命周期: oncreate
+03-12 15:45:11.744 18429-18429/zs.com.empty E/生命周期: onstart
+03-12 15:45:11.748 18429-18429/zs.com.empty E/生命周期: onresume
+```
+2.未做任何配置,竖屏切换回横屏
+```java
+03-12 15:47:19.646 18429-18429/zs.com.empty E/生命周期: onPause
+03-12 15:47:19.646 18429-18429/zs.com.empty E/生命周期: onsaveInstanceState
+03-12 15:47:19.647 18429-18429/zs.com.empty E/生命周期: onstop
+03-12 15:47:19.647 18429-18429/zs.com.empty E/生命周期: ondestroy
+03-12 15:47:19.717 18429-18429/zs.com.empty E/生命周期: oncreate
+03-12 15:47:19.718 18429-18429/zs.com.empty E/生命周期: onstart
+03-12 15:47:19.723 18429-18429/zs.com.empty E/生命周期: onresume
+```
+3.设置android:configChanges="orientation|screenSize",横竖屏不走其他生命周期
+
+
+####6.Activity与Fragment之间生命周期比较
+1.上图
+![activity与fragment生命周期](http://img.blog.csdn.net/20151210201347582?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+1.生命周期log
+在创建的过程中，是Activity带领Fragment执行生命周期中的方法，所以生命周期方法的执行顺序是这样的：
+
+1.Activity--onCreate();
+
+2.Fragment--onAttach();
+
+3.Fragment--onCreate();
+
+4.Fragment--onCreateView();
+
+5.Fragment--onActivityCreated();
+
+接着是这样的：
+
+6.Activity--onStart();
+
+7.Fragment--onStart();
+
+8.Activity--onResume();
+
+9.Fragment--onResume();
+
+我们知道，无论对于Activity还是对于Fragment，onResume这个生命周期都是他们执行时间最长的，当我们的Activity或者Fragment打开之后，它就一直处于这个生命周期中。
+
+当销毁的时候，春江水暖鸭先知，当然是Fragment先感知到，于是销毁的时候就是Fragment带领Activity：
+
+10.Fragment--onPause();
+
+11.Activity--onPause();
+
+12.Fragment--onStop();
+
+13.Activity--onStop();
+
+14.Fragment--onDestroyView();
+
+15.Fragment--onDestroy();
+
+16.Fragment--onDetach();
+
+17.Activity--onDestroy();
+
+上面这个顺序有一个前提，就是我们所有的日志打印代码都是紧挨着super方法写。因为如果我们如果把Fragment写在了布局文件中，同时又在Activity的onCreate()方法中的setContentView之后打印日志，那么我们看到的生命周期的执行顺序就会有所不同，不过只是细微的差别，这点大家自己研究，道理也很好明白。
+
+####7.Activity上有Dialog的时候按Home键时的生命周期
+1.在activity上弹出dialog样式的activity：onpause,关闭dialog后 onresume
+2.针对上面问题
+```java
+03-12 16:56:11.137 27495-27495/zs.com.empty E/生命周期: onPause
+03-12 16:56:11.161 27495-27495/zs.com.empty E/other生命周期: oncreate
+03-12 16:56:11.164 27495-27495/zs.com.empty E/other生命周期: onstart
+03-12 16:56:11.168 27495-27495/zs.com.empty E/other生命周期: onresume
+//按home键后
+03-12 16:56:16.729 27495-27495/zs.com.empty E/other生命周期: onPause
+03-12 16:56:16.737 27495-27495/zs.com.empty E/生命周期: onsaveInstanceState
+03-12 16:56:16.738 27495-27495/zs.com.empty E/生命周期: onstop
+03-12 16:56:16.739 27495-27495/zs.com.empty E/other生命周期: onsaveInstanceState
+03-12 16:56:16.740 27495-27495/zs.com.empty E/other生命周期: onstop
+//重新打开
+03-12 17:03:39.855 27495-27495/zs.com.empty E/生命周期: onrestart
+03-12 17:03:39.856 27495-27495/zs.com.empty E/生命周期: onstart
+03-12 17:03:39.856 27495-27495/zs.com.empty E/other生命周期: onrestart
+03-12 17:03:39.856 27495-27495/zs.com.empty E/other生命周期: onstart
+03-12 17:03:39.857 27495-27495/zs.com.empty E/other生命周期: onresume
+
+```
+otheractivity是dialog样式的activity.
+
+####8.两个Activity 之间跳转时必然会执行的是哪几个方法？
+直接看Log,其实我觉得这种没必要问，是个程序员打个log看一下就知道了。。。
+
+
+```java
+03-12 17:08:45.739 10183-10183/zs.com.empty E/生命周期: onPause
+03-12 17:08:45.801 10183-10183/zs.com.empty E/other生命周期: oncreate
+03-12 17:08:45.807 10183-10183/zs.com.empty E/other生命周期: onstart
+03-12 17:08:45.811 10183-10183/zs.com.empty E/other生命周期: onresume
+03-12 17:08:46.245 10183-10183/zs.com.empty E/生命周期: onsaveInstanceState
+03-12 17:08:46.246 10183-10183/zs.com.empty E/生命周期: onstop
+
+//返回
+03-12 17:09:15.191 10183-10183/zs.com.empty E/other生命周期: onPause
+03-12 17:09:15.200 10183-10183/zs.com.empty E/生命周期: onrestart
+03-12 17:09:15.200 10183-10183/zs.com.empty E/生命周期: onstart
+03-12 17:09:15.201 10183-10183/zs.com.empty E/生命周期: onresume
+03-12 17:09:15.503 10183-10183/zs.com.empty E/other生命周期: onstop
+03-12 17:09:15.503 10183-10183/zs.com.empty E/other生命周期: ondestroy
+
+```
+
+####9.前台切换到后台，然后再回到前台，Activity生命周期回调方法。
+1.无聊的问题
+```java
+03-12 17:11:27.016 10183-10183/zs.com.empty E/生命周期: onPause
+03-12 17:11:27.026 10183-10183/zs.com.empty E/生命周期: onsaveInstanceState
+03-12 17:11:27.027 10183-10183/zs.com.empty E/生命周期: onstop
+//后台回前台
+03-12 17:11:52.256 10183-10183/zs.com.empty E/生命周期: onrestart
+03-12 17:11:52.257 10183-10183/zs.com.empty E/生命周期: onstart
+03-12 17:11:52.257 10183-10183/zs.com.empty E/生命周期: onresume
+
+```
+
+####10.Activity的四种启动模式对比
