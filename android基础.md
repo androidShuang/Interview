@@ -225,3 +225,57 @@ otheractivity是dialog样式的activity.
 ```
 
 ####10.Activity的四种启动模式对比
+1.任务栈：任务栈Task，是一种用来放置Activity实例的容器，他是以栈的形式进行盛放，也就是所谓的先进后出，主要有2个基本操作：压栈和出栈，其所存放的Activity是不支持重新排序的，只能根据压栈和出栈操作更改Activity的顺序。启动一个Application的时候，系统会为它默认创建一个对应的Task，用来放置根Activity。默认启动Activity会放在同一个Task中，新启动的Activity会被压入启动它的那个Activity的栈中，并且显示它。当用户按下回退键时，这个Activity就会被弹出栈，按下Home键回到桌面，再启动另一个应用，这时候之前那个Task就被移到后台，成为后台任务栈，而刚启动的那个Task就被调到前台，成为前台任务栈，Android系统显示的就是前台任务栈中的Top实例Activity。
+2.怎么设置呢？通过androidmanifest的android:launchMode或者通过intent的flag来设置的。
+3.standard的默认模式。在这个模式下，都会默认创建一个新的实例。因此，在这种模式下，可以有多个相同的实例，也允许多个相同Activity叠加。应用场景：绝大多数Activity。
+4.singleTop：栈顶复用模式，如果要开启的activity在任务栈的顶部已经存在，就不会创建新的实例，而是调用 onNewIntent() 方法。避免栈顶的activity被重复的创建。应用场景：在通知栏点击收到的通知，然后需要启动一个Activity，这个Activity就可以用singleTop，否则每次点击都会新建一个Activity。
+5.singleTask：栈内复用模式， activity只会在任务栈里面存在一个实例。如果要激活的activity，在任务栈里面已经存在，就不会创建新的activity，而是复用这个已经存在的activity，调用 onNewIntent() 方法，并且清空这个activity任务栈上面所有的activity。应用场景：大多数App的主页。对于大部分应用，当我们在主界面点击回退按钮的时候都是退出应用，那么当我们第一次进入主界面之后，主界面位于栈底，以后不管我们打开了多少个Activity，只要我们再次回到主界面，都应该使用将主界面Activity上所有的Activity移除的方式来让主界面Activity处于栈顶，而不是往栈顶新加一个主界面Activity的实例，通过这种方式能够保证退出应用时所有的Activity都能报销毁。
+6.singleInstance：单一实例模式，整个手机操作系统里面只有一个实例存在。不同的应用去打开这个activity 共享公用的同一个activity。他会运行在自己单独，独立的任务栈里面，并且任务栈里面只有他一个实例存在。应用场景：呼叫来电界面。这种模式的使用情况比较罕见，在Launcher中可能使用。或者你确定你需要使Activity只有一个实例。
+7.LaunchMode与StartActivityForResult：我们在开发过程中经常会用到StartActivityForResult方法启动一个Activity，然后在onActivityResult()方法中可以接收到上个页面的回传值，但你有可能遇到过拿不到返回值的情况，那有可能是因为Activity的LaunchMode设置为了singleTask。5.0之后，android的LaunchMode与StartActivityForResult的关系发生了一些改变。两个Activity，A和B，现在由A页面跳转到B页面，看一下LaunchMode与StartActivityForResult之间的关系：
+![android5.0之前](https://upload-images.jianshu.io/upload_images/1187237-144638fbf8298061.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+![android5.0之后](https://upload-images.jianshu.io/upload_images/1187237-864d6df150cf2142.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/700)
+这是为什么呢？
+这是因为ActivityStackSupervisor类中的startActivityUncheckedLocked方法在5.0中进行了修改。在5.0之前，当启动一个Activity时，系统将首先检查Activity的launchMode，如果为A页面设置为SingleInstance或者B页面设置为singleTask或者singleInstance,则会在LaunchFlags中加入FLAG_ACTIVITY_NEW_TASK标志，而如果含有FLAG_ACTIVITY_NEW_TASK标志的话，onActivityResult将会立即接收到一个cancle的信息，而5.0之后这个方法做了修改，修改之后即便启动的页面设置launchMode为singleTask或singleInstance，onActivityResult依旧可以正常工作，也就是说无论设置哪种启动方式，StartActivityForResult和onActivityResult()这一组合都是有效的。所以如果你目前正好基于5.0做相关开发，不要忘了向下兼容，这里有个坑请注意避让。
+
+####11.Activity状态保存于恢复
+1.onSaveInstanceState(),onSaveInstanceState() 方法用来在Activity被强制销毁之前保存数据，onSaveInstanceState()方法会携带一个 Bundle类型的参数，Bundle提供了一系列的方法用于保存数据，比如可以使用 putString()方法保存字符串，使用 putInt()方法保存整型数据。每个保存方法需要传入两个参数，第一个参数是键，第二个参数是真正要保存的内容,这个方法是异常销毁activity时才会调用，正常销毁不会调用，而且需要些super方法，这样可以让系统保存基本控件的数据。
+2.onRestoreInstanceState(),只有在Bundle不为空时才会回调，而在onCreate方法当中是通过判空操作来判断是否有需要恢复的状态的。（所以使用onRestoreInstanceState,或者是onCreate依据项目需求来定。）
+
+####12.fragment各种情况下的生命周期
+1.这个篇幅有点长，暂时不在这里展开。
+
+####13.Fragment状态保存startActivityForResult是哪个类的方法，在什么情况下使用？
+1.Activity、FragmentActivity、Fragment中都有startActivityForResult()方法，也都有用以接收结果的onActivityResult()方法。
+2.假设有一个FragmentActivity中嵌套一个Fragment，它们各自使用startActivityForResult发起数据请求。 经测，目标所返回结果数据，能否被它们各自的onActivityResult方法所接收的情况如下：
+![结果](http://img.blog.csdn.net/20161119124707067)
+
+- Fragment和FragmentActivity都能接收到自己的发起的请求所返回的结果
+- FragmentActivity发起的请求，Fragment完全接收不到结果
+- Fragment发起的请求，虽然在FragmentActivity中能获取到结果，但是requestCode完全对应不上  
+
+3.设计目的就是为了把来自Fragment的请求和来自FragmentActivity自身请求区分开来。
+4.状态保存？这个有待验证，但是有个说法：
+**当Activity的onSaveInstanceState被调用的时候，Activity将会从View 层次(View Hierachy)中的每一个View中自动搜集View的状态。请注意，只会搜集实现了View状态保存/恢复的内部方法的View的数据。一旦onRestoreInstanceState被调用,Activity将会将这些搜集到的数据一对一的返还给View 层次里在搜集的时候提供了同样的android:id属性的View。
+这就是为什么尽管Activity已经被销毁，而我们并没有做一些特别的事情来保存状态，但是EditText中键入的文本仍然能够呈现的原因。这并不是什么魔法，这些View 的状态已经被自动的保存和恢复回来了。
+这也是为什么View 在没有被设置android:id属性的时候不能保存和恢复自己的状态的原因。
+尽管这些View 的状态被自动的保存了，但是Activity的成员变量并不会有同样的效果。这些成员变量会被和Activity一起销毁。你可以手动的保存和恢复它们，通过onSaveInstanceState和onRestoreInstanceState方法。
+需要验证一下。
+**
+如果Fragment被系统销毁，所有事情都会发生的像Activity发生的那样。
+这意味着每一个单独的成员变量被销毁了。你必须分别地通过onSaveInstanceState和onActivityCreated方法，手动的保存和恢复这些变量。 请注意在Fragment里面没有onRestoreInstanceState方法存在。
+
+**Fragment状态保存/恢复最佳实践的第一条件就是...
+应用中使用的每一个单独的View都必须在内部实现状态的保存和恢复
+Android内部通过onSaveInstanceState 和 onRestoreInstanceState 方法提供了保存和恢复View 状态的机制。开发者的任务就是实现它。**
+![代码](http://img.blog.csdn.net/20160919173812553?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+**为了使你的代码变得干净和可扩展，你最好把Fragment状态和View状态分开处理。如果这里有任何属性是属于View的，在View内部进行保存和恢复.如果这里有任何属性是属于Fragment的，在Fragment内部进行保存和恢复。这里有一个例子。**
+
+**总结：以上说的就是，如果是fragment的状态那就用onSaveInstanceState和onActivityCreated方法这两个方法，如果是view的状态保存就用extends view的方法onSaveInstanceState和onRestoreInstanceState方法，所以分开处理，如果第三方组件也要继承一下然后重写这两个方法，记得在布局上写id.**
+
+贴个地址[blog](http://blog.csdn.net/u011694328/article/details/52587652)
+
+####14.如何实现Fragment的滑动？
+1.手势识别，GestureDetector
+2.viewpager
+
+####15.fragment之间传递数据的方式？
