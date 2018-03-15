@@ -279,3 +279,235 @@ Android内部通过onSaveInstanceState 和 onRestoreInstanceState 方法提供�
 2.viewpager
 
 ####15.fragment之间传递数据的方式？
+1.通过activity和tag获取需要设置的fragment
+```java
+
+//MainFragment.java文件中
+public void setData(String string) {
+    bt_main.setText(string);
+}
+
+lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+    @Override
+     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+          MainFragment mainFragment =
+               (MainFragment) getActivity()
+               .getSupportFragmentManager()
+               .findFragmentByTag("mainFragment");
+          mainFragment.setData(mDatas.get(position));
+     }
+});
+
+
+```
+2.采取接口回调的方式进行数据传递。
+```java
+//MenuFragment.java文件中
+public interface OnDataTransmissionListener {
+    public void dataTransmission(String data);
+}
+public void setOnDataTransmissionListener(OnDataTransmissionListener mListener) {
+    this.mListener = mListener;
+}
+
+//MenuFragment.java文件中
+lv.setOnItemClickListener(new AdapterView.OnItemClickListener() { 
+   @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        /**
+         * 方法二：采取接口回调的方式进行数据传递
+         */
+        if (mListener != null) {
+            mListener.dataTransmission(mDatas.get(position));
+        }
+    }
+});
+
+//在MainActivity.java中
+menuFragment.setOnDataTransmissionListener(new MenuFragment.OnDataTransmissionListener() {
+    @Override
+    public void dataTransmission(String data) {
+        mainFragment.setData(data);  //注：对应的mainFragment此时应该要用final进行修饰
+    }
+});
+
+
+
+
+```
+3.EventBus,不展开
+
+####16.Activity 怎么和Service 绑定？
+1.简单说就是在activity里重写ServiceConnection，然后通过intent来bindservice就行了，
+2.连接上之后就会在ServiceConnection里有个回调onServiceConnected。在回调里写业务。
+3.上代码看看
+```java
+  private Myserver.Mybinder mybinder;
+    private  boolean bindserver;
+    private Button bindbtn;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mybinder = (Myserver.Mybinder) service;
+            Log.e("OtherActivity","service connectioned");
+            mybinder.playMusic();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_other);
+        Log.e("other生命周期","oncreate");
+        bindbtn = (Button) findViewById(R.id.bindbtn);
+        bindbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(OtherActivity.this,Myserver.class);
+//                OtherActivity.this.startService(intent);
+                bindserver = OtherActivity.this.bindService(intent,serviceConnection,BIND_AUTO_CREATE);
+                Log.e("OtherActivity","bindbtn");
+
+            }
+        });
+    }
+//记得在manifest文件中注册service.
+
+package zs.com.empty;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
+import android.util.Log;
+import android.widget.Toast;
+
+/**
+ * Created by zhaoshuang on 2018/3/15.
+ */
+
+public class Myserver extends Service{
+
+    private Mybinder myBinder = new Mybinder();
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return myBinder;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Log.e("Myserver","onCreate");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.e("Myserver","onstartCommand");
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    class Mybinder extends Binder{
+
+        public void playMusic(){
+            Toast.makeText(Myserver.this, "音乐在后台播放", Toast.LENGTH_SHORT).show();
+        }
+
+        public void getProgress(){
+            Toast.makeText(Myserver.this, "播放到80%", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+}
+
+
+```
+
+####17.service和activity怎么进行数据交互？
+1.broadcast
+2.bindService
+####18.Service的开启方式
+1.通过startService创建的service创建后就跟对应的activity没有关系，当activity销毁时，Service依然在运行（前提是没有调用stopService（））
+2.通过startService()方法启动的service，会调用onCreate（），onStartCommand（）方法，如果Service已经被创建，则不会再调用onCreate（）方法，但是依然会调用onStartCommand（）方法  适用场景：音乐播放器，上传下载文件一般都是在onStartCommand（）方法中开始执行的
+3.通过StartService（）方法启动的service，Service类中的onBind（）方法返回null即可
+4.无论通过startService（）方法开启多少次service，只要调用一次stopService（）方法，这个服务就会停止。（Service只有一个实例，这就是StartService（）方法和stopService（）方法中的intent可以不是全局变量的原因，即使是从新new出来的service指向的也是正在运行的service）
+5.StartService（）方法和stopService（）方法都是异步执行的，并且是串行执行，只有当第一次执行完才会（onStartCommand（）执行完毕）执行第二次的。
+6.一个activity通过bindService（）绑定服务后会调用Service的onCreate（）和onBind（）方法，onBind（）方法会返回一个IBander对象的实例给activity，ServiceConnection的onServiceConnected（）方法中，标志着ActivityA与TestService建立了绑定连接，此时当客户端任意一个ActivityB想要在次bindservice的时候，service不会再走onCreate（）和onBind（）方法，而是直接拿到IBinder的实例（这个实例是APP中所有Activity共享的），所以在ActivityB的ServiceConnection的onServiceConnected（）方法中会直接获得IBinder的实例 ,此时如果在ActivityB中解绑Service，不会触发Service的unBindService（）和onDestory（）方法，这两个方法是当Service没有任何activity与之绑定的时候才会调用，此时还有ActivityA与之绑定。
+7.不能多次调用unBindService（），会抛出异常，所以在调用该方法时需要判断，当bindService的时候将flag的值改变。
+8.如果service的onBind（）方法返回null，service依然会启动，但是没有和activity绑定上，但但是此时仍然要用unBindService（）方法停止服务。
+
+####19.谈谈你对ContentProvider的理解
+1.作用：为了给不同应用提供内容访问。
+2.ContentProvider 封装了数据的跨进程传输，我们可以直接使用 getContentResolver() 拿到 ContentResolver 进行增删改查即可。
+3.ContentProvider 以一个或多个表（与在关系型数据库中的表类似）的形式将数据呈现给外部应用。 行表示提供程序收集的某种数据类型的实例，行中的每个列表示为实例收集的每条数据。
+####20.说说ContentProvider、ContentResolver、ContentObserver 之间的关系
+1.TODO
+3###21.请描述一下广播BroadcastReceiver的理解
+1.是四大组件之一,主要用于接收app发送的广播
+2.内部通信实现机制:通过android系统的Binder机制.
+3.广播分为两种:
+- 无序广播 
+优点:完全异步,逻辑上可被任何接受者收到广播,效率高
+缺点:接受者不能讲处理结果交给下一个接受者,且无法终止广播.
+- 有序广播 
+按被接收者的优先级循序传播
+A>B>C,每个都有权终止广播,下一个就得不到
+每一个都可进行修改操作,下一个就得到上一个修改后的结果.
+4.最终广播者:
+- Context.sendOrderedBroadcast(intent,receiverPermission,resultReceiver,scheduler,initialCode,initialData,initialExtras)时我们可以指定resultReceiver为最终广播接收者.
+- 如果比他优先级高的接受者不终止广播,那么他的onReceive会执行两次 
+- 第一次是正常的接收
+- 第二次是最终的接收
+- 如果优先级高的那个终止广播,那么还是依然收到一次最终的广播  
+
+5.常见的广播接收者运用场景:
+- 开机启动,sd卡挂载,低电量,外拨电话,锁屏等
+- 比如根据产品经理要求,设计播放音乐时,锁屏是否决定暂停音乐.
+[广播常见面试题](http://blog.csdn.net/nzfxx/article/details/51835743)
+
+####21.广播使用的方式和场景
+1.开机启动,sd卡挂载,低电量,外拨电话,锁屏等
+2.比如根据产品经理要求,设计播放音乐时,锁屏是否决定暂停音乐.
+3.内部消息传递。
+4.App全局监听，这种主要用于在AndroidManifest中静态注册的广播接收器，一般我们在收到该消息后，需要做一些相应的动作，而这些动作与当前App的组件，比如Activity或者Service的是否运行无关，比如我们在集成第三方Push SDK时，一般都会添加一个静态注册的BroadcastReceiver来监听Push消息，当有Push消息过来时，会在后台做一些网络请求或者发送通知等等。
+5.组件局部监听，这种主要是在Activity或者Service中使用registerReceiver()动态注册的广播接收器，因为当我们收到一些特定的消息，比如网络连接发生变化时，我们可能需要在当前Activity页面给用户一些UI上的提示，或者将Service中的网络请求任务暂停。所以这种动态注册的广播接收器适合特定组件的特定消息处理。
+6.关于BroadcastReceiver使用需要注意的几点：
+- onReceive中不能执行耗时操作，如果耗时超过10s会弹出ANR。
+- onReceive中context参数，如果是静态注册的广播，context为ReceiverRestrictedContext，所在如果在这里要启动一个Activity的话（调用startActivity），需要在intent中添加Intent.FLAG_ACTIVITY_NEW_TASK；如果是动态注册的广播，context为当前注册时所在的组件，比如Activity或者Service。
+- 监听系统广播，需要在AndroidManifest中申请权限，此外，Android高版本系统对于一些重要的系统广播，比如开机启动，网络连接，电量变化，锁屏等做了限制，如果需要监听这些广播，需要做系统兼容性处理。
+- 普通广播的广播接收器是并行无序执行的，有序广播的广播接收器按照广播优先级串行执行  
+
+####22.本地广播和全局广播有什么差别？
+1.BroadcastReceiver是针对应用间、应用与系统间、应用内部进行通信的一种方式
+2.LocalBroadcastReceiver仅在自己的应用内发送接收广播，也就是只有自己的应用能收到，数据更加安全广播只在这个程序里，而且效率更高。
+3.BroadcastReceiver 使用
+    - 制作intent（可以携带参数）
+    - 使用sendBroadcast()传入intent;
+    - 制作广播接收器类继承BroadcastReceiver重写onReceive方法（或者可以匿名内部类啥的）
+    - 在java中（动态注册）或者直接在Manifest中注册广播接收器（静态注册）使用registerReceiver()传入接收器和intentFilter
+    - 取消注册可以在OnDestroy()函数中，unregisterReceiver()传入接收器 
+
+4.LocalBroadcastReceiver 使用.LocalBroadcastReceiver不能静态注册，只能采用动态注册的方式。
+在发送和注册的时候采用，LocalBroadcastManager的sendBroadcast方法和registerReceiver方法.
+
+####23.AlertDialog,popupWindow,Activity区别
+####24.Application 和 Activity 的 Context 对象的区别
+####25.Android属性动画特性
+####26.如何导入外部数据库?
+####27.LinearLayout、RelativeLayout、FrameLayout的特性及对比，并介绍使用场景
+####28.谈谈对接口与回调的理解
+####29.回调的原理
+####30.介绍下SurfView
+####31.序列化的作用，以及Android两种序列化的区别
+####32.差值器
+####33.估值器
+####34.Android中数据存储方式
+
