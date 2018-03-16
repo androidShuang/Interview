@@ -499,15 +499,194 @@ A>B>C,每个都有权终止广播,下一个就得不到
 在发送和注册的时候采用，LocalBroadcastManager的sendBroadcast方法和registerReceiver方法.
 
 ####23.AlertDialog,popupWindow,Activity区别
+1.popupwindow悬浮在当前activity之上的，相对于某个Anchor锚位置，alertdialog会有遮罩层。
+2.具体还要参考下源码。
 ####24.Application 和 Activity 的 Context 对象的区别
+上个图
+![区别图](https://images2017.cnblogs.com/blog/1285672/201712/1285672-20171215221510340-1626979773.png)
+
+**注意看到有一些NO上添加了一些数字，其实这些从能力上来说是YES，但是为什么说是NO呢？下面一个一个解释：
+数字1：启动Activity在这些类中是可以的，但是需要创建一个新的task。一般情况不推荐。
+数字2：在这些类中去layout inflate是合法的，但是会使用系统默认的主题样式，如果你自定义了某些样式可能不会被使用。
+数字3：在receiver为null时允许，在4.2或以上的版本中，用于获取黏性广播的当前值。（可以无视）
+注：ContentProvider、BroadcastReceiver之所以在上述表格中，是因为在其内部方法中都有一个context用于使用。**
 ####25.Android属性动画特性
+1.在一定时间间隔内，通过不断对值进行改变，并不断将该值赋给对象的属性，从而实现该对象在该属性上的动画效果.
+2.主要得两个类ValueAnimator 类 & ObjectAnimator
+3.ValueAnimator属性动画机制中 最核心的一个类
+4.区别
+	- ValueAnimator 类是先改变值，然后 手动赋值 给对象的属性从而实现动画；是 间接 对对象属性进行操作； 
+	- ObjectAnimator 类是先改变值，然后 自动赋值 给对象的属性从而实现动画；是 直接 对对象属性进行操作；
+
+挂个链接
+[很好的讲属性动画](http://blog.csdn.net/carson_ho/article/details/72909894)  
+
 ####26.如何导入外部数据库?
+1.首先要知道数据库的存放路径，一般是/data/packagname/databases/,
+2.将要导入的数据库放到assets目录里
+3.通过流拷贝到数据库存放的路径上
+4.创建sqllitehelper
+5.来个代码
+```java
+public class BookSqliteOpenHelper extends SQLiteOpenHelper {
+
+    public BookSqliteOpenHelper(Context context) {
+        super(context, "book.db", null, 1);
+        this.myContext = context;
+    }
+
+    private Context myContext;
+    //The Android's default system path of your application database.
+    private String DB_PATH = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/booksql/";
+
+
+    private static String DB_NAME = "book.db";
+    private static String ASSETS_NAME = "book.db";
+    private SQLiteDatabase myDataBase = null;
+
+    public void createDataBase() throws IOException {
+        boolean dbExist = checkDataBase();
+
+        if (!dbExist) {
+            try {
+                File dir = new File(DB_PATH);
+                if (!dir.exists()) {
+                    dir.mkdir();
+                }
+                File dbf = new File(DB_PATH + DB_NAME);
+                if (dbf.exists()) {
+                    dbf.delete();
+                }
+                SQLiteDatabase.openOrCreateDatabase(dbf, null);
+                copyDataBase();
+            } catch (IOException e) {
+                throw new Error("数据库创建失败");
+            }
+        }
+    }
+
+    private void copyDataBase() throws IOException {
+        InputStream myInput = null;
+//        try {
+            myInput = myContext.getAssets().open(ASSETS_NAME);
+            String outFileName = DB_PATH + DB_NAME;
+            OutputStream myOutput = new FileOutputStream(outFileName);
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = myInput.read(buffer)) > 0) {
+                myOutput.write(buffer, 0, length);
+            }
+            myOutput.flush();
+            myOutput.close();
+            myInput.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    private boolean checkDataBase() {
+        SQLiteDatabase checkDB = null;
+        String myPath = DB_PATH + DB_NAME;
+        try {
+            checkDB = SQLiteDatabase.openDatabase(myPath, null, SQLiteDatabase.OPEN_READONLY);
+        } catch (SQLiteException e) { //database does't exist yet.
+        }
+        if (checkDB != null) {
+            checkDB.close();
+        }
+        return checkDB != null ? true : false;
+    }
+
+    @Override
+    public synchronized void close() {
+        if (myDataBase != null) {
+            myDataBase.close();
+        }
+        super.close();
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+    }
+}
+
+public class MainActivity extends AppCompatActivity {
+    private String DB_PATH = android.os.Environment.getExternalStorageDirectory().getAbsolutePath() + "/booksql/";
+    private static String DB_NAME = "book.db";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        BookSqliteOpenHelper helper = new BookSqliteOpenHelper(this);
+            try {
+                helper.createDataBase();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        SQLiteDatabase database = SQLiteDatabase.openDatabase(DB_PATH+DB_NAME,null,SQLiteDatabase.OPEN_READWRITE);
+        Cursor cursor = database.query("book", null, null, null, null, null, null, null);
+        while (cursor.moveToNext()){
+            String bookname = cursor.getString(cursor.getColumnIndex("bookname"));
+            Log.i("11111111111111111",bookname);
+        }
+    }
+}
+
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+
+//检查数据库存在
+private boolean checkDataBase() {
+String myPath = DB_PATH + DB_NAME;
+File file=new File(myPath);
+return file.exists();
+}
+
+```
 ####27.LinearLayout、RelativeLayout、FrameLayout的特性及对比，并介绍使用场景
+1. RelativeLayout会让子View调用2次onMeasure，LinearLayout 在有weight时，也会调用子View2次onMeasure
+2. RelativeLayout的子View如果高度和RelativeLayout不同，则会引发效率问题，当子View很复杂时，这个问题会更加严重。如果可以，尽量使用padding代替margin。
+3. 在不影响层级深度的情况下,使用LinearLayout和FrameLayout而不是RelativeLayout。最后再思考一下文章开头那个矛盾的问题，为什么Google给开发者默认新建了个RelativeLayout，而自己却在DecorView中用了个LinearLayout。因为DecorView的层级深度是已知而且固定的，上面一个标题栏，下面一个内容栏。采用RelativeLayout并不会降低层级深度，所以此时在根节点上用LinearLayout是效率最高的。而之所以给开发者默认新建了个RelativeLayout是希望开发者能采用尽量少的View层级来表达布局以实现性能最优，因为复杂的View嵌套对性能的影响会更大一些。
+4. 能用两层LinearLayout，尽量用一个RelativeLayout，在时间上此时RelativeLayout耗时更小。另外LinearLayout慎用layout_weight,也将会增加一倍耗时操作。由于使用LinearLayout的layout_weight,大多数时间是不一样的，这会降低测量的速度。这只是一个如何合理使用Layout的案例，必要的时候，你要小心考虑是否用layout weight。总之减少层级结构，才是王道，让onMeasure做延迟加载，用viewStub，include等一些技巧。  
+
 ####28.谈谈对接口与回调的理解
-####29.回调的原理
+1. 我们知道java中接口是不可以直接创建实例的，那么问题来了，假如我把一个接口声明为一个变量，那么我执行这个接口中的方法，接口没有实例它该怎么办呢？啊哈，这里自然又改出现java中的另一个特性---“多态”，这时java虚拟机自然会去找其子类，调用其子类中已经重载的该方法，这里就是接口回调的本质！！我们只需要给该变量指向其子类的地址就可以在调用的时候知道调用子类的方法。那么我们就可以在A类中创建接口的子类实例，在B类中创建一个接口的变量，把A类的地址传给B类的变量，在变量执行接口中的方法的时候就会调用A类中重写的方法，这就是接口回调的执行步骤。
+
 ####30.介绍下SurfView
+1. SurfaceView是View的一个特殊子类，它的目的是另外提供一个线程进行绘制操作。用SurfaceView进行绘制，首先要创建一个对象。
+2. 对Surface对象的操作是通过SurfaceHolder来进行的。所以，在你的SurfaceView类初始化的时候，你需要调用 getHolder()来获得SurfaceHolder对象，然后用addCallback()加上回调接口（因为你的类实现了相应的接口，所以此处传入this即可）。这个接口中实现的三个回调函数（surfaceChanged(SurfaceHolder holder, int format, int width, int height)，surfaceCreated(SurfaceHolder holder)，surfaceDestroyed(SurfaceHolder holder)）分别对应Surface何时更改、创建和销毁。
+3. 在你的SurfaceView类中应该建立一个线程类，处理绘制操作。为此，要向这个线程类传递上面获得的SurfaceHolder对象。
+4. 绘制：在线程类的run()方法中进行绘制操作，通过lockCanvas()方法获得Canvas对象，然后就可以用这个对象进行绘制，绘制完成后调用unlockCanvasAndPost()，传入Canvas对象，这时Surface将会按Canvas进行绘制。
+
 ####31.序列化的作用，以及Android两种序列化的区别
-####32.差值器
-####33.估值器
+1. 序列化是指把Java对象的状态转换为字节序列并存储到一个存储媒介的过程。反之，把字节序列恢复为Java对象的过程则称之为反序列化。
+2. 目的：在不同jvm种共享实例对象，在网络传输，RMI（远程方法调用），在进程间传递对象。
+3. 区别:先说Serializable,java中提供的，但是由于它使用了Java的反射机制，所以它会比较慢，同时反射机制也会产生许多临时对象，占用了GC(Gargage Collection)活动，目前来说，反射对jvm的运算压力不是很大，主要是内存压力比较大。
+4. 再说Parcelable，这个是android提供的,在内存中传递，实现Parcelable接口的对象就可以实现序列化并可以通过Intent和Binder传递。
+5. 总结，serializable效率不如parcelable效率高，但是parcelable只能在内存中传输，要是通过网络传输要使用saerializable.
+
+####32.估值器
+1. 插值器（Interpolator）决定 值 的变化模式（匀速、加速blabla） 
+2. 估值器（TypeEvaluator）决定 值 的具体变化数值
+3. 估值器的作用：设置动画 如何从初始值 过渡到 结束值 的逻辑，协助插值器 实现非线性运动的动画效果。
+
+####33.插值器
+1. 设置 属性值 从初始值过渡到结束值 的变化规律 
+2. 插值器在动画的使用有两种方式：在XML / Java代码中设置
+
 ####34.Android中数据存储方式
+1. sqllite
+2. contentprivoder
+3. file
+4. SharedPreferences
+5. 网络存储。。。。
 
