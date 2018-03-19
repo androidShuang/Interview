@@ -256,12 +256,106 @@ public void test(int a){
 2.finally是在异常处理时提供finally块来执行任何清除操作。不管有没有异常被抛出、捕获，finally块都会被执行。try块中的内容是在无异常时执行到结束。catch块中的内容，是在try块内容发生catch所声明的异常时，跳转到catch块中执行。finally块则是无论异常是否发生，都会执行finally块的内容，所以在代码逻辑中有需要无论发生什么都必须执行的代码，就可以放在finally块中
 3.finalize是方法名。java技术允许使用finalize（）方法在垃圾收集器将对象从内存中清除出去之前做必要的清理工作。这个方法是由垃圾收集器在确定这个对象没有被引用时对这个对象调用的。它是在object类中定义的，因此所有的类都继承了它。子类覆盖finalize（）方法以整理系统资源或者被执行其他清理工作。finalize（）方法是在垃圾收集器删除对象之前对这个对象调用的。
 
-####16.序列化的方式
-####17.Serializable 和Parcelable 的区别
-####18.静态属性和静态方法是否可以被继承？是否可以被重写？以及原因？
-####19.静态内部类的设计意图
-####20.成员内部类、静态内部类、局部内部类和匿名内部类的理解，以及项目中的应用
-####21.谈谈对kotlin的理解
-####22.闭包和局部内部类的区别
-####23.string 转换成 integer的方式及原理
 
+####18.静态属性和静态方法是否可以被继承？是否可以被重写？以及原因？
+结论：java中静态属性和静态方法可以被继承，但是没有被重写(overwrite)而是被隐藏. 
+原因： 
+- 1). 静态方法和属性是属于类的，调用的时候直接通过类名.方法名完成对，不需要继承机制及可以调用。如果子类里面定义了静态方法和属性，那么这时候父类的静态方法或属性称之为"隐藏"。如果你想要调用父类的静态方法和属性，直接通过父类名.方法或变量名完成，至于是否继承一说，子类是有继承静态方法和属性，但是跟实例方法和属性不太一样，存在"隐藏"的这种情况。 
+- 2). 多态之所以能够实现依赖于继承、接口和重写、重载（继承和重写最为关键）。有了继承和重写就可以实现父类的引用指向不同子类的对象。重写的功能是："重写"后子类的优先级要高于父类的优先级，但是“隐藏”是没有这个优先级之分的。 
+- 3). 静态属性、静态方法和非静态的属性都可以被继承和隐藏而不能被重写，因此不能实现多态，不能实现父类的引用可以指向不同子类的对象。非静态方法可以被继承和重写，因此可以实现多态。 
+
+####19.静态内部类的设计意图
+它唯一的作用就是随着类的加载（而不是随着对象的产生）而产生，以致可以用类名+静态成员名直接获得。
+这样静态内部类就可以理解了，因为这个类没有必要单独存放一个文件，它一般来说只被所在外部类使用。并且它可以直接被用 外部类名+内部类名 获得。
+
+####21.谈谈对kotlin的理解
+1. 代码简单
+2. 函数式编程
+3. 语法糖
+4. java兼容  
+
+####22.闭包和局部内部类的区别
+1. 引java中的,每个内部类都能独立地继承一个（接口的）实现，所以无论外围类是否已经继承了某个（接口的）实现，对于内部类都没有影响.
+2. 闭包就是把函数以及变量包起来，使得变量的生存周期延长。闭包跟面向对象是一棵树上的两条枝，实现的功能是等价的
+3.  如果在内部类中使用到了外部方法的变量,需要使用 final 修饰,否则无法编译通过,但如果使用的是 JDK8,那么即便你不加final 修饰,也是可以编译过的,因为编译器替你加上了。
+4.  内部类使用外部的局部变量,实际上形成了闭包,也就是捕获了所在方法内的变量
+
+
+####23.string 转换成 integer的方式及原理
+```java
+//判空不然容易空指针
+String str = "...";
+Integer i = null;
+if(str!=null){
+     i = Integer.valueOf(str);
+}
+
+```
+2.实现方式valueof内部调用的parseInt方法
+```java
+ public static int parseInt(String s, int radix)
+                throws NumberFormatException
+    {
+        /*
+         * WARNING: This method may be invoked early during VM initialization
+         * before IntegerCache is initialized. Care must be taken to not use
+         * the valueOf method.
+         */
+
+        if (s == null) {
+            throw new NumberFormatException("null");
+        }
+
+        if (radix < Character.MIN_RADIX) {
+            throw new NumberFormatException("radix " + radix +
+                                            " less than Character.MIN_RADIX");
+        }
+
+        if (radix > Character.MAX_RADIX) {
+            throw new NumberFormatException("radix " + radix +
+                                            " greater than Character.MAX_RADIX");
+        }
+
+        int result = 0;
+        boolean negative = false;
+        int i = 0, len = s.length();
+        int limit = -Integer.MAX_VALUE;
+        int multmin;
+        int digit;
+
+        if (len > 0) {
+            char firstChar = s.charAt(0);
+            if (firstChar < '0') { // Possible leading "+" or "-"
+                if (firstChar == '-') {
+                    negative = true;
+                    limit = Integer.MIN_VALUE;
+                } else if (firstChar != '+')
+                    throw NumberFormatException.forInputString(s);
+
+                if (len == 1) // Cannot have lone "+" or "-"
+                    throw NumberFormatException.forInputString(s);
+                i++;
+            }
+            multmin = limit / radix;
+            while (i < len) {
+                // Accumulating negatively avoids surprises near MAX_VALUE
+                digit = Character.digit(s.charAt(i++),radix);
+                if (digit < 0) {
+                    throw NumberFormatException.forInputString(s);
+                }
+                if (result < multmin) {
+                    throw NumberFormatException.forInputString(s);
+                }
+                result *= radix;
+                if (result < limit + digit) {
+                    throw NumberFormatException.forInputString(s);
+                }
+                result -= digit;
+            }
+        } else {
+            throw NumberFormatException.forInputString(s);
+        }
+        return negative ? result : -result;
+    }
+
+```
