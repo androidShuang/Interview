@@ -75,15 +75,251 @@ UTF-8 有以下编码规则：
 字节数 : 2;编码：UTF-16LE
 int占4个字节。
 ####4. 静态代理和动态代理的区别，什么场景使用？
-* Java的异常体系
-* 谈谈你对解析与分派的认识。
-* 修改对象A的equals方法的签名，那么使用HashMap存放这个对象实例的时候，会调用哪个equals方法？
-* Java中实现多态的机制是什么？
-* 如何将一个Java对象序列化到文件里？
-* 说说你对Java反射的理解
-* 说说你对Java注解的理解
+1. 代理类主要负责为委托类预处理消息、过滤消息、把消息转发给委托类，以及事后处理消息等
+2. 	由程序员创建或由特定工具自动生成源代码，再对其编译。在程序运行前，代理类的.class文件就已经存在了。
+3. 	在程序运行时，运用反射机制动态创建而成。
+4. 	静态代理事先知道要代理的是什么，而动态代理不知道要代理什么东西，只有在运行时才知道。
+5. 	场景就是，在调用一个方法的时候在前面或者后面添加一些逻辑。
+
+#### 5.Java的异常体系
+1. 上一张图片
+![java异常](http://img.blog.csdn.net/20160818155613382?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+2. Error与Exception
+
+    Error是程序无法处理的错误，比如OutOfMemoryError、ThreadDeath等。
+
+    这些异常发生时，Java虚拟机（JVM）一般会选择线程终止。
+
+    Exception是程序本身可以处理的异常，这种异常分两大类运行时异常和非运行时异常。程序中应当尽可能去处理这些异常。
+
+2. 运行时异常和非运行时异常      
+    - 运行时异常: 都是RuntimeException类及其子类异常：     IndexOutOfBoundsException索引越界异
+    ArithmeticException：数学计算异常
+    NullPointerException：空指针异常
+    ArrayOutOfBoundsException：数组索引越界异常
+    ClassNotFoundException：类文件未找到异常
+    ClassCastException：造型异常（类型转换异常）
+    这些异常是不检查异常（Unchecked Exception），程序中可以选择捕获处理，也可以不处理。这些异常一般是由程序逻辑错误引起的。
+    - 非运行时异常:是RuntimeException以外的异常，类型上都属于Exception类及其子类。从程序语法角度讲是必须进行处理的异常，如果不处理，程序就不能编译通过。如：
+    IOException、文件读写异常
+    FileNotFoundException：文件未找到异常
+    EOFException：读写文件尾异常
+    MalformedURLException：URL格式错误异常
+    SocketException：Socket异常
+    SQLException：SQL数据库异常
+
+#### 6.谈谈你对解析与分派的认识。
+1. 解析
+      所有方法调用中的目标方法在Class文件里面都是常量池中的符号引用，在类加载的解析阶段，会将其中的一部分符号引用转化为直接引用。这种解析的前提是：方法在程序真正运行之前就有一个可确定的调用版本，并且这个方法的调用版本在运行期是不可改变的，即“编译期可知，运行期不可变”，这类目标的方法的调用称为解析（Resolution）。
+2.   解析调用一定是个静态的过程，在编译期就完全确定，在类加载的解析阶段就将涉及的符号引用全部转变为可以确定的直接引用，不会延迟到运行期       再去完成。而分派（Dispatch）调用则可能是静态的也可能是动态的。于是分派方式就有静态分派和动态分派.
+3.   静态分派发生在编译阶段，不是由jvm执行的，典型的应用是重载（Overload）。静态分派的最直接的解释是在重载的时候是通过参数的静态类型而不是实际类型作为判断依据的。因此在编译阶段，Javac编译器会根据参数的静态类型决定使用哪个重载版本。
+4.   动态分派和多态性的体现-重写（Override）有着本质的联系。
+  
+#### 7.修改对象A的equals方法的签名，那么使用HashMap存放这个对象实例的时候，会调用哪个equals方法？
+1. 有待认证TODO，感觉是object的equals
+  
+  
+#### 8.Java中实现多态的机制是什么？
+1. 靠的是父类或接口定义的引用变量可以指向子类或具体实现类的实例对象，而程序调用的方法在运行期才动态绑定，就是引用变量所指向的具体实例对象的方法，也就是内存里正在运行的那个对象的方法，而不是引用变量的类型中定义的方法。这里只提供一个思路。 
+  
+
+#### 9.如何将一个Java对象序列化到文件里？
+1. 要保存到文件首先必须得获得文件输入流，然后将文件输入流作为参数，构造对象输入流，然后就能直接将对象输入到文件中。而要将对象恢复，则需要先获得文件输出流，然后将文件输出流作为参数，构造对象输出流，就能够得到对象，然后再强制性转换为原始对象即可，实现代码如下:
+  
+  
+```java
+
+package saveobject;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
+import model.Person;
+
+public class FileHelper {
+	private String fileName;
+	
+	public FileHelper(){
+		
+	}
+	
+	public FileHelper(String fileName){
+		this.fileName=fileName;
+	}
+	
+	/*
+	 * 将person对象保存到文件中
+	 * params:
+	 * 	p:person类对象
+	 */
+	public void saveObjToFile(Person p){
+		try {
+			//写对象流的对象
+			ObjectOutputStream oos=new ObjectOutputStream(new FileOutputStream(fileName));
+			
+			oos.writeObject(p);                 //将Person对象p写入到oos中
+			
+			oos.close();                        //关闭文件流
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
+	
+	/*
+	 * 从文件中读出对象，并且返回Person对象
+	 */
+	public Person getObjFromFile(){
+		try {
+			ObjectInputStream ois=new ObjectInputStream(new FileInputStream(fileName));
+			
+			Person person=(Person)ois.readObject();              //读出对象
+			
+			return person;                                       //返回对象
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+}
+
+
+```  
+
+2.保存对象到数据库并恢复
+    对象序列化之后得到的二进制流，所以要想保存序列化之后的对象，则必须用blob字段来保存。mysql中blob字段是用来存储二进制数据的。可以直接用PreparedStatement.setObject()方法来保存对象到数据库中。
+    而要将对象恢复，则首先需要读出二进制数据，读出的方法是用ResultSet.getBlob()方法，然后用Blob对象的getBinaryStream()方法来获得二进制流对象，然后将该二进制流对象作为参数构造带缓冲区的流对象BufferedStream，然后用byte[]数组从BufferedInputStream流中读取二进制数据，然后用该byte数组来构造ByteArrayInputStream，然后用ByteArrayInputStream来构造ObjectInputStream，最后直接用ObjectInputStream对象的readObject方法读出对象数据，并强制性转化为原始的对象数据。
+    
+```java
+package saveobject;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import model.Person;
+
+public class DBHelper {
+	private static Connection conn;                                      //连接
+	private PreparedStatement pres;                                      //PreparedStatement对象
+	
+	static{
+		try {
+			Class.forName("com.mysql.jdbc.Driver");              //加载驱动
+			System.out.println("数据库加载成功!!!");
+			String url="jdbc:mysql://localhost:3306/testdb";
+			String user="root";
+			String password="20130436";
+			
+			conn=DriverManager.getConnection(url,user,password); //建立连接
+			System.out.println("数据库连接成功!!!");
+		} catch (ClassNotFoundException | SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * 向数据库中的表testobj中插入多个Person对象
+	 * params:
+	 * 	persons:Person对象list
+	 */
+	public void savePerson(List<Person> persons){
+		String sql="insert into objtest(obj) values(?)";
+		
+		try {
+			pres=conn.prepareStatement(sql);
+			for(int i=0;i<persons.size();i++){
+				pres.setObject(1, persons.get(i));
+				 
+				pres.addBatch();                                   //实现批量插入
+			}
+			
+			pres.executeBatch();                                      //批量插入到数据库中
+			
+			if(pres!=null)
+				pres.close();
+			
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * 从数据库中读出存入的对象
+	 * return:
+	 * 	list:Person对象列表
+	 */
+	public List<Person> getPerson(){
+		List<Person> list=new ArrayList<Person>();
+		String sql="select obj from objtest";
+		
+		try {
+			pres=conn.prepareStatement(sql);
+			
+			ResultSet res=pres.executeQuery();
+			while(res.next()){
+				Blob inBlob=res.getBlob(1);                             //获取blob对象
+				
+				InputStream is=inBlob.getBinaryStream();                //获取二进制流对象
+				BufferedInputStream bis=new BufferedInputStream(is);    //带缓冲区的流对象
+				
+				byte[] buff=new byte[(int) inBlob.length()];
+				while(-1!=(bis.read(buff, 0, buff.length))){            //一次性全部读到buff中
+					ObjectInputStream in=new ObjectInputStream(new ByteArrayInputStream(buff));
+					Person p=(Person)in.readObject();                   //读出对象
+					
+					list.add(p);
+				}
+				
+			}
+		} catch (SQLException | IOException | ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return list;
+	}
+}
+
+
+```
+
+#### 10.说说你对Java反射的理解
+1. java不算是动态语言，但是反射算是让java成为动态语言的第一步，
+2. 什么是动态语言，是指程序在运行时可以改变其结构：新的函数可以被引进，已有的函数可以被删除等在结构上的变化。比如JavaScript便是一个典型的动态语言
+3. 而静态类型语言的类型判断是在运行前判断（如编译阶段），比如java就是静态类型语言。
+4. 通过反射，我们可以在运行时获得程序或程序集中每一个类型的成员和成员的信息。程序中一般的对象的类型都是在编译期就确定下来的，而Java反射机制可以动态地创建对象并调用其属性，这样的对象的类型在编译期是未知的。所以我们可以通过反射机制直接创建对象，即使这个对象的类型在编译期是未知的。
+5. 想要哪个类，jvm去加载，然后创建对象，然后使用。在运行时可以动态加载和创建类并使用，我认为这是反射。  
+
+#### 11.说说你对Java注解的理解
 * 说说你对依赖注入的理解
 * 说一下泛型原理，并举例说明
 * Java中String的了解
 * String为什么要设计成不可变的？
-* Object类的equal和hashCode方法重写，为什么？
