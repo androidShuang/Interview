@@ -302,8 +302,17 @@ Vector
 * HashMap的实现原理
 * HashMap数据结构？
 * HashMap源码理解
-* HashMap如何put数据（从HashMap源码角度讲解）？
+* HashMap如何put数据（从HashMap源码角度讲解）？  
+
 #### HashMap怎么手写实现？
+#### HashMap与HashTable的区别?
+与之相比HashTable是线程安全的，且不允许key、value是null。
+HashTable默认容量是11。
+HashTable是直接使用key的hashCode(key.hashCode())作为hash值，不像HashMap内部使用static final int hash(Object key)扰动函数对key的hashCode进行扰动后作为hash值。
+HashTable取哈希桶下标是直接用模运算%.（因为其默认容量也不是2的n次方。所以也无法用位运算替代模运算）
+扩容时，新容量是原来的2倍+1。int newCapacity = (oldCapacity << 1) + 1;
+Hashtable是Dictionary的子类同时也实现了Map接口，HashMap是Map接口的一个实现类；
+
 * ConcurrentHashMap的实现原理
 * ArrayMap和HashMap的对比
 * HashTable实现原理
