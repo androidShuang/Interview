@@ -3,16 +3,23 @@
 * Android动画框架实现原理
 * Android各个版本API的区别
 * Requestlayout，onlayout，onDraw，DrawChild区别与联系
+[超链接](https://blog.csdn.net/weixin_41101173/article/details/79726311)
 * invalidate和postInvalidate的区别及使用
 * Activity-Window-View三者的差别
 * 谈谈对Volley的理解
 * 如何优化自定义View
+[超链接](https://blog.csdn.net/qinjuning/article/details/7972991)
 * 低版本SDK如何实现高版本api？
+可以去support包中找相应的方法  
+
 * 描述一次网络请求的流程
+[超链接](https://blog.csdn.net/seu_calvin/article/details/53304406)
 * HttpUrlConnection 和 okhttp关系
+TODO留着看okhttp的时候解答。
+
 * Bitmap对象的理解
 * looper架构
-* ActivityThread，AMS，WMS的工作原理
+* ActivityThread，AMS，WMS的工作原理(重要)
 * 自定义View如何考虑机型适配
 * 自定义View的事件
 * AstncTask+HttpClient 与 AsyncHttpClient有什么区别？
