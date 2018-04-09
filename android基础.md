@@ -71,4 +71,6 @@ D:onBind()
 E:onUnbind()
 **问题：start->bind->unbind 是不是A-B-D-E-C bind->start->unbind是不是A-D-B-E-C，在执行unbind的时候会调用unbind->ondestroy？
 unbindService执行后，它会去检查是否执行过startService，如果执行过，它只是被解绑，解绑后并不自动调用onDestroy，如果想让它destroy，需要再加一步stopService，可以用Log方法检查。**
+**剩下的,Broadcast和content provider在后面说吧。**
 
+####3.Activity之间的通信方式.
