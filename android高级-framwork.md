@@ -3,7 +3,9 @@
 * java虚拟机的特性
 * 谈谈对jvm的理解
 * JVM内存区域，开线程影响哪块内存
+[链接](https://www.cnblogs.com/wangjzh/p/5258254.html)
 * 对Dalvik、ART虚拟机有什么了解？
+[链接](https://blog.csdn.net/evan_man/article/details/52414390)
 * Art和Dalvik对比
 * 虚拟机原理，如何自己设计一个虚拟机(内存管理，类加载，双亲委派)
 * 谈谈你对双亲委派模型理解
