@@ -71,7 +71,11 @@ D:onBind()
 E:onUnbind()
 **问题：start->bind->unbind 是不是A-B-D-E-C bind->start->unbind是不是A-D-B-E-C，在执行unbind的时候会调用unbind->ondestroy？
 unbindService执行后，它会去检查是否执行过startService，如果执行过，它只是被解绑，解绑后并不自动调用onDestroy，如果想让它destroy，需要再加一步stopService，可以用Log方法检查。**
+**剩下的,Broadcast和content provider在后面说吧。**
 
+<<<<<<< HEAD
+####3.Activity之间的通信方式.
+=======
 ####3.Activity之间的通信方式
 1.intent，这个大家都用过不展开。这里需要说的一点就是，intent的携带数据大小是有限制的，在505Kb,感觉应该是512，后来想想应该是intent本身也需要占一定的大小吧。
 2.借助类的静态变量。（但是这个不安全）
@@ -690,3 +694,4 @@ return file.exists();
 4. SharedPreferences
 5. 网络存储。。。。
 
+>>>>>>> refs/remotes/origin/master
